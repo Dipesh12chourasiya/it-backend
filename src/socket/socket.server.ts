@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import User from "../modules/auth/auth.model";
 import { IMonitoringEvent } from "../modules/monitoring/monitoring.model";
+import { setupWorkspaceSocket } from "../modules/workspace/workspace.socket";
 
 let io: Server;
 
@@ -39,6 +40,9 @@ export const initSocket = (httpServer: HttpServer): Server => {
     const user = (socket as any).user;
     console.log(`[Socket] ${user.role} "${user.name}" connected (${socket.id})`);
 
+    // Setup workspace event handlers
+    setupWorkspaceSocket(socket, user);
+
     // Join interview-specific rooms
     socket.on("join-interview", (interviewId: string) => {
       socket.join(`interview:${interviewId}`);
@@ -69,6 +73,8 @@ export const initSocket = (httpServer: HttpServer): Server => {
       socket.to(`interview:${data.interviewId}`).emit("webrtc-offer", {
         offer: data.offer,
         senderId: socket.id,
+        userName: user.name,
+        role: user.role,
       });
     });
 
