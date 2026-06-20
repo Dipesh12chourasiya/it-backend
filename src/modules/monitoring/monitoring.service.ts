@@ -3,6 +3,8 @@ import MonitoringEvent, { IMonitoringEvent } from "./monitoring.model";
 import Interview from "../interviews/interview.model";
 import User from "../auth/auth.model";
 import { AppError } from "../../utils/errors";
+import { updateTrustScore } from "../trust-score/trust-score.service";
+import { emitTrustScoreUpdate } from "../../socket/socket.server";
 
 /**
  * Log a monitoring event for a candidate during an interview
@@ -30,6 +32,20 @@ export const createEvent = async (
     eventType,
     timestamp: new Date(),
   });
+
+  try {
+    // Automatically update the trust score in CandidateSession and persist it
+    const newScore = await updateTrustScore(interviewId, candidateId, eventType);
+
+    // Emit live trust score update to recruiters in the room
+    emitTrustScoreUpdate(interviewId, {
+      candidateId,
+      score: newScore,
+      eventType,
+    });
+  } catch (err) {
+    console.error("[Monitoring Service] Failed to update trust score:", err);
+  }
 
   return event;
 };

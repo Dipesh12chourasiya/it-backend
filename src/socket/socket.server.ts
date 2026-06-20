@@ -149,7 +149,7 @@ export const emitMonitoringEvent = (
  */
 export const emitTrustScoreUpdate = (
   interviewId: string,
-  data: { candidateId: string; candidateName: string; score: number }
+  data: { candidateId: string; score: number; eventType: string }
 ): void => {
   if (!io) return;
   io.to(`interview:${interviewId}`).emit("trust-score-updated", data);

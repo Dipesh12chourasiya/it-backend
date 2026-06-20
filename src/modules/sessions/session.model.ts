@@ -6,6 +6,7 @@ export interface ISession extends Document {
   joinedAt: Date;
   leftAt?: Date;
   status: "waiting" | "active" | "completed" | "left";
+  score: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +35,13 @@ const sessionSchema = new Schema<ISession>(
       type: String,
       enum: ["waiting", "active", "completed", "left"],
       default: "active",
+      required: true,
+    },
+    score: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100,
       required: true,
     },
   },

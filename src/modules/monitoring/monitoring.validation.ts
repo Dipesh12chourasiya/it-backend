@@ -15,5 +15,6 @@ export const logEventSchema = z.object({
     "COPY",
     "PASTE",
     "FULLSCREEN_EXIT",
+    "DEVTOOLS_OPEN",
   ]),
 });
