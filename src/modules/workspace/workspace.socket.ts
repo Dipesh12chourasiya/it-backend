@@ -37,12 +37,20 @@ export const setupWorkspaceSocket = (socket: Socket, user: any): void => {
   // Real-time code change
   socket.on("code-change", async (data: { interviewId: string; code: string; language: string }) => {
     try {
-      // Broadcast to other users in the workspace
+      // ── Broadcast to OTHER users only ──────────────────────────────
+      //
+      // `socket.to(room)` sends to every socket in the room EXCEPT
+      // the sender.  This is the primary echo-prevention mechanism.
+      //
+      // We also include `senderId` so the client can apply a second
+      // layer of defense — if a duplicate event somehow arrives (e.g.
+      // from a reconnection), the client can ignore it.
       socket.to(`workspace:${data.interviewId}`).emit("code-change", {
         interviewId: data.interviewId,
         code: data.code,
         language: data.language,
-        userId: user._id,
+        senderId: user._id.toString(),
+        senderSocketId: socket.id,
       });
 
       // Debounced save to database (handled by the frontend with auto-save)
@@ -54,11 +62,12 @@ export const setupWorkspaceSocket = (socket: Socket, user: any): void => {
   // Real-time whiteboard change
   socket.on("whiteboard-change", async (data: { interviewId: string; whiteboardData: any }) => {
     try {
-      // Broadcast to other users in the workspace
+      // Broadcast to OTHER users only
       socket.to(`workspace:${data.interviewId}`).emit("whiteboard-change", {
         interviewId: data.interviewId,
         whiteboardData: data.whiteboardData,
-        userId: user._id,
+        senderId: user._id.toString(),
+        senderSocketId: socket.id,
       });
 
       // Debounced save to database (handled by the frontend with auto-save)
