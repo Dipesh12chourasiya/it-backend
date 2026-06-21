@@ -5,13 +5,53 @@ import User from "../modules/auth/auth.model";
 import { IMonitoringEvent } from "../modules/monitoring/monitoring.model";
 import { setupWorkspaceSocket } from "../modules/workspace/workspace.socket";
 
+// ── Allowed origins (must mirror the CORS list in app.ts) ──────────────
+const SOCKET_ALLOWED_ORIGINS = [
+  "http://localhost:4200",
+  "http://localhost:3000",
+  "https://interview-guard-ai.vercel.app",
+  // Add any custom Vercel domains here
+];
+
 let io: Server;
 
 export const initSocket = (httpServer: HttpServer): Server => {
   io = new Server(httpServer, {
+    // ── CORS ──────────────────────────────────────────────────────────
     cors: {
-      origin: "*",
+      origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, curl, Postman)
+        if (!origin) return callback(null, true);
+        if (SOCKET_ALLOWED_ORIGINS.includes(origin)) {
+          return callback(null, true);
+        }
+        // In development, allow all origins
+        if (process.env.NODE_ENV !== "production") {
+          return callback(null, true);
+        }
+        callback(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
+      },
+      credentials: true,
       methods: ["GET", "POST"],
+    },
+
+    // ── Transport ─────────────────────────────────────────────────────
+    // Prefer WebSocket for low-latency signalling; fall back to polling.
+    // Render's reverse proxy DOES support WebSocket upgrade — no
+    // `allowUpgrades: false` needed.
+    transports: ["websocket", "polling"],
+
+    // ── Keep-alive pings (critical for Render's reverse proxy) ────────
+    // Render's nginx reverse-proxy has a 60-second idle timeout.
+    // Pings every 25 seconds guarantee the connection stays open.
+    pingInterval: 25000,   // 25 s
+    pingTimeout: 20000,    // 20 s (must be < pingInterval)
+
+    // ── Reconnection / state ──────────────────────────────────────────
+    // Allow the server to recover missed packets after a brief disconnect
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+      skipMiddlewares: true,
     },
   });
 
