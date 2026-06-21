@@ -5,12 +5,17 @@ import User from "../modules/auth/auth.model";
 import { IMonitoringEvent } from "../modules/monitoring/monitoring.model";
 import { setupWorkspaceSocket } from "../modules/workspace/workspace.socket";
 
-// ── Allowed origins (must mirror the CORS list in app.ts) ──────────────
+// ── Allowed origins — MUST mirror app.ts exactly ───────────────────────
+// If these two lists drift apart, Socket.IO will connect but HTTP
+// requests (or vice-versa) will fail — causing confusing partial outages.
 const SOCKET_ALLOWED_ORIGINS = [
+  // ── Development ─────────────────────────────────────────────────────
   "http://localhost:4200",
   "http://localhost:3000",
-  "https://interview-guard-ai.vercel.app",
-  // Add any custom Vercel domains here
+  "http://localhost:5000",
+  // ── Production ──────────────────────────────────────────────────────
+  "https://interview-guard-frontend.vercel.app",  // ★ Vercel frontend
+  "https://interview-guard-ai.vercel.app",        // Alternate Vercel domain
 ];
 
 let io: Server;
@@ -18,37 +23,62 @@ let io: Server;
 export const initSocket = (httpServer: HttpServer): Server => {
   io = new Server(httpServer, {
     // ── CORS ──────────────────────────────────────────────────────────
+    //
+    // Socket.IO v4 handles pre-flight (OPTIONS) internally — we do NOT
+    // need a manual OPTIONS handler here (that's only for Express).
+    //
+    // CRITICAL: `credentials: true` requires an explicit origin callback
+    // that returns the actual origin string.  `origin: "*"` is illegal
+    // when credentials are used — browsers reject it silently.
     cors: {
       origin: (origin, callback) => {
-        // Allow requests with no origin (server-to-server, curl, Postman)
+        // Allow requests with no origin (server-to-server, curl, Postman,
+        // some mobile WebViews, Socket.IO polling fallback)
         if (!origin) return callback(null, true);
+
         if (SOCKET_ALLOWED_ORIGINS.includes(origin)) {
           return callback(null, true);
         }
+
         // In development, allow all origins
         if (process.env.NODE_ENV !== "production") {
           return callback(null, true);
         }
+
+        console.error(`[Socket.IO CORS] Blocked origin: ${origin}`);
         callback(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
       },
       credentials: true,
+      // Socket.IO only needs GET (polling) and POST (polling + upgrade).
+      // WebSocket upgrade is handled at the HTTP level, not CORS.
       methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     },
 
     // ── Transport ─────────────────────────────────────────────────────
-    // Prefer WebSocket for low-latency signalling; fall back to polling.
-    // Render's reverse proxy DOES support WebSocket upgrade — no
-    // `allowUpgrades: false` needed.
+    //
+    // Prefer WebSocket for low-latency signalling (WebRTC offer/answer,
+    // code sync, presence).  Fall back to long-polling when WSS is
+    // unavailable or blocked by a corporate proxy.
+    //
+    // Render's reverse proxy DOES support WebSocket upgrade, so
+    // `allowUpgrades: false` is NOT needed.
     transports: ["websocket", "polling"],
 
     // ── Keep-alive pings (critical for Render's reverse proxy) ────────
-    // Render's nginx reverse-proxy has a 60-second idle timeout.
+    //
+    // Render's nginx reverse-proxy has a ~60-second idle timeout.
     // Pings every 25 seconds guarantee the connection stays open.
-    pingInterval: 25000,   // 25 s
-    pingTimeout: 20000,    // 20 s (must be < pingInterval)
+    // `pingTimeout` MUST be less than `pingInterval` to avoid false
+    // disconnects when the ping response is slightly delayed.
+    pingInterval: 25000,   // 25 s  (< 60 s proxy timeout)
+    pingTimeout: 20000,    // 20 s  (< pingInterval)
 
-    // ── Reconnection / state ──────────────────────────────────────────
-    // Allow the server to recover missed packets after a brief disconnect
+    // ── Reconnection / state recovery ─────────────────────────────────
+    //
+    // Allow the server to recover missed packets after a brief
+    // disconnect (< 2 min).  This prevents a code-sync gap when a
+    // candidate's browser briefly loses network during an interview.
     connectionStateRecovery: {
       maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
       skipMiddlewares: true,
