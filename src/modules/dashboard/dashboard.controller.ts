@@ -1,5 +1,31 @@
 import { Request, Response, NextFunction } from "express";
-import { getInterviewDashboard, getCandidateDashboard } from "./dashboard.service";
+import {
+  getRecruiterOverview,
+  getInterviewDashboard,
+  getCandidateDashboard,
+} from "./dashboard.service";
+
+/**
+ * GET /api/v1/dashboard/recruiter/overview
+ * Aggregate statistics for the recruiter's home dashboard.
+ */
+export const getRecruiterOverviewController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const recruiterId = (req as any).user._id as string;
+    const data = await getRecruiterOverview(recruiterId);
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 /**
  * GET /api/v1/dashboard/interview/:interviewId

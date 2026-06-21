@@ -6,6 +6,83 @@ import User from "../auth/auth.model";
 import { AppError } from "../../utils/errors";
 
 /**
+ * GET /api/v1/dashboard/recruiter/overview
+ * Aggregate statistics for the recruiter's home dashboard.
+ */
+export const getRecruiterOverview = async (recruiterId: string) => {
+  // All interviews created by this recruiter
+  const interviewIds = await Interview.find({ recruiterId })
+    .select("_id")
+    .lean();
+  const ids = interviewIds.map((i) => i._id);
+
+  // Total candidates who have sessions in this recruiter's interviews
+  const candidateIds = await Session.distinct("candidateId", {
+    interviewId: { $in: ids },
+  });
+
+  // Active interviews (status === 'active')
+  const activeInterviews = await Interview.countDocuments({
+    recruiterId,
+    status: "active",
+  });
+
+  // Active sessions (status === 'active', not yet left)
+  const activeSessions = await Session.countDocuments({
+    interviewId: { $in: ids },
+    status: "active",
+  });
+
+  // Average trust score across all sessions
+  const scoreAgg = await Session.aggregate([
+    { $match: { interviewId: { $in: ids } } },
+    { $group: { _id: null, avgScore: { $avg: "$score" } } },
+  ]);
+  const averageTrustScore =
+    scoreAgg.length > 0 ? Math.round(scoreAgg[0].avgScore) : 100;
+
+  // High risk candidates (score < 50 in any session)
+  const highRiskSessions = await Session.aggregate([
+    { $match: { interviewId: { $in: ids }, score: { $lt: 50 } } },
+    { $group: { _id: "$candidateId" } },
+  ]);
+  const highRiskCandidates = highRiskSessions.length;
+
+  // Total monitoring events across all interviews
+  const totalMonitoringEvents = await MonitoringEvent.countDocuments({
+    interviewId: { $in: ids },
+  });
+
+  // Recent sessions (last 5)
+  const recentSessions = await Session.find({ interviewId: { $in: ids } })
+    .populate("interviewId", "title interviewCode")
+    .populate("candidateId", "name email")
+    .sort({ joinedAt: -1 })
+    .limit(5)
+    .lean();
+
+  return {
+    totalCandidates: candidateIds.length,
+    activeInterviews,
+    averageTrustScore,
+    highRiskCandidates,
+    totalMonitoringEvents,
+    activeSessions,
+    recentSessions: recentSessions.map((s: any) => ({
+      _id: s._id,
+      interviewTitle: s.interviewId?.title || "Unknown",
+      interviewCode: s.interviewId?.interviewCode || "",
+      candidateName: s.candidateId?.name || "Unknown",
+      candidateEmail: s.candidateId?.email || "",
+      score: s.score,
+      status: s.status,
+      joinedAt: s.joinedAt,
+      leftAt: s.leftAt,
+    })),
+  };
+};
+
+/**
  * Calculate risk level from trust score
  */
 const getRiskLevel = (score: number): "LOW" | "MEDIUM" | "HIGH" => {
