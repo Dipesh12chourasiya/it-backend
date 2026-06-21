@@ -8,6 +8,9 @@ const SCORE_DEDUCTIONS: Record<string, number> = {
   PASTE: 15,
   FULLSCREEN_EXIT: 10,
   DEVTOOLS_OPEN: 20,
+  NO_FACE: 15,
+  MULTIPLE_FACE: 20,
+  FACE_AWAY: 5,
 };
 
 /**

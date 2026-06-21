@@ -3,7 +3,16 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IMonitoringEvent extends Document {
   interviewId: mongoose.Types.ObjectId;
   candidateId: mongoose.Types.ObjectId;
-  eventType: "TAB_SWITCH" | "WINDOW_BLUR" | "COPY" | "PASTE" | "FULLSCREEN_EXIT" | "DEVTOOLS_OPEN";
+  eventType:
+    | "TAB_SWITCH"
+    | "WINDOW_BLUR"
+    | "COPY"
+    | "PASTE"
+    | "FULLSCREEN_EXIT"
+    | "DEVTOOLS_OPEN"
+    | "NO_FACE"
+    | "MULTIPLE_FACE"
+    | "FACE_AWAY";
   timestamp: Date;
 }
 
@@ -21,7 +30,17 @@ const monitoringEventSchema = new Schema<IMonitoringEvent>(
     },
     eventType: {
       type: String,
-      enum: ["TAB_SWITCH", "WINDOW_BLUR", "COPY", "PASTE", "FULLSCREEN_EXIT", "DEVTOOLS_OPEN"],
+      enum: [
+        "TAB_SWITCH",
+        "WINDOW_BLUR",
+        "COPY",
+        "PASTE",
+        "FULLSCREEN_EXIT",
+        "DEVTOOLS_OPEN",
+        "NO_FACE",
+        "MULTIPLE_FACE",
+        "FACE_AWAY",
+      ],
       required: true,
     },
     timestamp: {

@@ -75,6 +75,9 @@ export const getInterviewDashboard = async (interviewId: string) => {
         totalPasteEvents: 0,
         totalCopyEvents: 0,
         totalFullscreenExits: 0,
+        totalNoFaceEvents: 0,
+        totalMultipleFaceEvents: 0,
+        totalFaceAwayEvents: 0,
         totalMonitoringEvents: 0,
       };
 
@@ -95,6 +98,15 @@ export const getInterviewDashboard = async (interviewId: string) => {
             break;
           case "FULLSCREEN_EXIT":
             statistics.totalFullscreenExits = stat.count;
+            break;
+          case "NO_FACE":
+            statistics.totalNoFaceEvents = stat.count;
+            break;
+          case "MULTIPLE_FACE":
+            statistics.totalMultipleFaceEvents = stat.count;
+            break;
+          case "FACE_AWAY":
+            statistics.totalFaceAwayEvents = stat.count;
             break;
         }
       }
@@ -182,6 +194,9 @@ export const getCandidateDashboard = async (candidateId: string) => {
     totalPasteEvents: 0,
     totalCopyEvents: 0,
     totalFullscreenExits: 0,
+    totalNoFaceEvents: 0,
+    totalMultipleFaceEvents: 0,
+    totalFaceAwayEvents: 0,
     totalMonitoringEvents: 0,
   };
 
@@ -200,6 +215,15 @@ export const getCandidateDashboard = async (candidateId: string) => {
         break;
       case "FULLSCREEN_EXIT":
         statistics.totalFullscreenExits = stat.count;
+        break;
+      case "NO_FACE":
+        statistics.totalNoFaceEvents = stat.count;
+        break;
+      case "MULTIPLE_FACE":
+        statistics.totalMultipleFaceEvents = stat.count;
+        break;
+      case "FACE_AWAY":
+        statistics.totalFaceAwayEvents = stat.count;
         break;
     }
   }

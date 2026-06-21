@@ -16,5 +16,8 @@ export const logEventSchema = z.object({
     "PASTE",
     "FULLSCREEN_EXIT",
     "DEVTOOLS_OPEN",
+    "NO_FACE",
+    "MULTIPLE_FACE",
+    "FACE_AWAY",
   ]),
 });

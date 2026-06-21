@@ -6,6 +6,7 @@ import sessionRoutes from "../modules/sessions/session.routes";
 import monitoringRoutes from "../modules/monitoring/monitoring.routes";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes";
 import workspaceRoutes from "../modules/workspace/workspace.routes";
+import reportRoutes from "../modules/reports/report.routes";
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use("/sessions", sessionRoutes);
 router.use("/monitoring", monitoringRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/workspace", workspaceRoutes);
+router.use("/reports", reportRoutes);
 
 export default router;
