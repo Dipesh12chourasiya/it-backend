@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../modules/auth/auth.model";
 import { IMonitoringEvent } from "../modules/monitoring/monitoring.model";
 import { setupWorkspaceSocket } from "../modules/workspace/workspace.socket";
+import { setupProblemSocket } from "../modules/problem/problem.socket";
 
 // ── Allowed origins — MUST mirror app.ts exactly ───────────────────────
 // If these two lists drift apart, Socket.IO will connect but HTTP
@@ -112,6 +113,9 @@ export const initSocket = (httpServer: HttpServer): Server => {
 
     // Setup workspace event handlers
     setupWorkspaceSocket(socket, user);
+
+    // Setup problem event handlers
+    setupProblemSocket(socket, user);
 
     // Join interview-specific rooms
     socket.on("join-interview", (interviewId: string) => {

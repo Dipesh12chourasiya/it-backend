@@ -1,5 +1,17 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+// ── Problem subdocument ───────────────────────────────────────────────
+export interface IProblem {
+  title: string;
+  description: string;
+  examples?: string;
+  constraints?: string;
+  version: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ── Interview document ────────────────────────────────────────────────
 export interface IInterview extends Document {
   title: string;
   description: string;
@@ -8,6 +20,7 @@ export interface IInterview extends Document {
   startTime: Date;
   endTime: Date;
   status: "scheduled" | "active" | "completed";
+  currentProblem?: IProblem;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +62,36 @@ const interviewSchema = new Schema<IInterview>(
       type: String,
       enum: ["scheduled", "active", "completed"],
       default: "scheduled",
+    },
+    currentProblem: {
+      title: {
+        type: String,
+        trim: true,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      examples: {
+        type: String,
+        trim: true,
+      },
+      constraints: {
+        type: String,
+        trim: true,
+      },
+      version: {
+        type: Number,
+        default: 1,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
   },
   {
