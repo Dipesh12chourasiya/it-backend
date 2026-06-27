@@ -20,7 +20,7 @@ const workspaceSchema = new Schema<IWorkspace>(
     language: {
       type: String,
       default: "javascript",
-      enum: ["javascript", "typescript", "python", "java", "cpp"],
+      enum: ["javascript", "typescript", "python", "java", "cpp" , "sql"],
     },
     code: {
       type: String,
